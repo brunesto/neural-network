@@ -45,7 +45,7 @@ class Layer(val size: Int) {
 
 	override fun toString(): String {
 		var r = ""
-		r += "\n" + activations.size + " neurons \n"
+		r += "" + activations.size + " neurons \n"
 		r += "#       " + formatRuler(activations.size)
 		r += "\n active "
 		for (i in 0 until activations.size)
@@ -95,14 +95,7 @@ class Network(val sizes: IntArray) {
 		return layers[layers.size - 1].activations
 	}
 
-	fun sgd() {
-		// TODO
-	}
-
-	fun miniBatch() {
-		// TODO
-	}
-
+	
 	fun label2expected(expected: Int): DoubleArray {
 		return DoubleArray(sizes[layers.size - 1]) { i -> if (i == expected) 1.0 else 0.0 }
 	}
@@ -160,8 +153,7 @@ class Network(val sizes: IntArray) {
 		for (l in 0 until layers.size) {
 
 			if (showLayers) {
-				r += "\nlayer:" + l
-				r += layers[l]
+				r += "\nlayer:" + l+" "+ layers[l]
 			}
 
 			if (showLayers && showTransitions)

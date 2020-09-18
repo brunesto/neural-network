@@ -69,7 +69,7 @@ fun graph(name: String, from: Double, to: Double, f1: (Double) -> Double, f2: (D
 	}
 
 	g.dispose();
-	ImageIO.write(image, "png", File(name));
+	ImageIO.write(image, "png", File(name+".png"));
 
 
 }

@@ -10,9 +10,20 @@ import java.awt.Color
 
 class BackPropagation(val net: Network) {
 
+	
 
 	// inner class used to store cost derivative for the layer transition
 	class LayerTransitionD(inputSize: Int, outputSize: Int) {
+
+		fun acc(that: LayerTransitionD) {
+			for (j in 0 until dCostVsBiases.size) {
+				dCostVsBiases[j] += that.dCostVsBiases[j]
+				for (i in 0 until dCostVsWeights.size) {
+					dCostVsWeights[i][j] += that.dCostVsWeights[i][j]
+				}
+			}
+
+		}
 
 
 		// derivatives 
@@ -25,7 +36,7 @@ class BackPropagation(val net: Network) {
 			var r = ""
 
 
-			r += "\nbias and weights:"
+			r += "\ncost vs bias and weight derivatives:"
 			r += "\n"
 			r += "    j\\i: bias" + formatRuler(dCostVsBiases.size)
 			for (j in 0 until nextLayerSize) {
@@ -39,6 +50,39 @@ class BackPropagation(val net: Network) {
 		}
 
 	}
+
+	// helper to accumulate an array of transition's derivatives
+	fun acc(target: Array<LayerTransitionD>, src: Array<LayerTransitionD>) {
+		for (l in 0 until target.size) {
+			target[l].acc(src[l])
+		}
+	}
+
+	fun toString(transitionsd: Array<LayerTransitionD>): String {
+		var r = ""
+//		if (showLayers)
+//			r += "\nlayers d:" + layersd.size
+//
+		for (l in 0 until transitionsd.size) {
+
+//			if (showLayers) {
+//				r += "\nlayer d:" + l
+//				r += layersd[l]
+//			}
+//
+//			if (showLayers && showTransitions)
+//				r += "\n"
+//			if (showTransitions) {
+			r += "\ntransitiond:" + l + " - " + (l + 1)
+			if (l < transitionsd.size)
+				r += transitionsd[l]
+
+		}
+		return r
+
+
+	}
+
 
 	// inner class used to store cost against individual neuron activation derivative
 	// this class scope is only within the costd() function
@@ -63,11 +107,10 @@ class BackPropagation(val net: Network) {
 
 
 	// costd() will accumulate derivatives within transitionsd
-	var transitionsd = newTransitionsd()
 
 
 	// Clear the transitions weight and bias derivatives accumulators
-	fun newTransitionsd():Array<LayerTransitionD> {
+	fun newTransitionsd(): Array<LayerTransitionD> {
 //		for (l in 0 until transitionsd.size)
 //			for (j in 0 until net.sizes[l + 1]) {
 //
@@ -82,10 +125,10 @@ class BackPropagation(val net: Network) {
 
 
 	// Compute the gradiant
-	fun costd(pair: Pair<DoubleArray, DoubleArray>) {
-
+	fun costd(pair: Pair<DoubleArray, DoubleArray>): Array<LayerTransitionD> {
+		val transitionsd = newTransitionsd()
 		net.feedForward(pair.first)
-
+		println(net.toString(true, true))
 		// derivative of cost vs neuron activation	
 		val layersd = Array(net.sizes.size) { i -> LayerD(net.sizes[i]) };
 
@@ -174,11 +217,16 @@ class BackPropagation(val net: Network) {
 			}
 		}
 
+		println(toString(transitionsd))
+
+		//File("tmp/net.dot").writeText(Dotter.dot(true,net, transitionsd, layersd, pair.second))
+
+		return transitionsd
 	}
 
 
 	// update the weights and biases according to the gradiant
-	fun changeNetworkWeights(m: Double) {
+	fun changeNetworkWeights(m: Double, transitionsd: Array<LayerTransitionD>) {
 
 
 		for (l in 0 until transitionsd.size) {
@@ -200,49 +248,31 @@ class BackPropagation(val net: Network) {
 
 
 	// update the derivatives on a batch
-	fun batch(pairs: List<Pair<DoubleArray, DoubleArray>>) {
-
+	fun batch(pairs: List<Pair<DoubleArray, DoubleArray>>): Array<LayerTransitionD> {
+		val transitionsdAcc = newTransitionsd()
 
 		for (p in pairs.indices) {
 			//	LOG("learn sample " + p)
 			val pair = pairs[p]
-			costd(pair);
+			val transitionsd = costd(pair)
+			acc(transitionsdAcc, transitionsd)
 
 		}
 		LOG({ " " + toString() })
+		
+		return transitionsdAcc
 	}
 
 	fun learn(learnRate: Double, pairs: List<Pair<DoubleArray, DoubleArray>>) {
-		transitionsd = newTransitionsd()
-		batch(pairs)
-		changeNetworkWeights(learnRate);
+				//File("tmp/net.dot").writeText(Dotter.dot(false,net))
+		val transitionsdAcc = batch(pairs)
+	//	File("tmp/net.dot").writeText(Dotter.dot(false,net, transitionsdAcc))
+		changeNetworkWeights(learnRate, transitionsdAcc);
+		//File("tmp/net.dot").writeText(Dotter.dot(false,net))
+		
 	}
 
-
-	override fun toString(): String {
-		var r = ""
-//		if (showLayers)
-//			r += "\nlayers d:" + layersd.size
-//
-		for (l in 0 until transitionsd.size) {
-
-//			if (showLayers) {
-//				r += "\nlayer d:" + l
-//				r += layersd[l]
-//			}
-//
-//			if (showLayers && showTransitions)
-//				r += "\n"
-//			if (showTransitions) {
-			r += "\ntransitiond:" + l + " - " + (l + 1)
-			if (l < transitionsd.size)
-				r += transitionsd[l]
-
-		}
-		return r
-
-
-	}
 
 }
+
 

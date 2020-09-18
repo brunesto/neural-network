@@ -24,7 +24,7 @@ object Dotter {
 		if (d == null)
 			return ""
 		val color = if (d > 0) "green" else "blue"
-		return "<font point-size=\"10\" color=\"" + color + "\">" + prefix + String.format("%4.3f", d) + "</font>"
+		return "<font point-size=\"10\" color=\"" + color + "\">" + prefix + String.format("%+4.3f", d) + "</font>"
 	}
 
 	fun dot(
@@ -54,32 +54,51 @@ object Dotter {
 
 					val prevlayer = net.layers[l - 1];
 					val transition = net.transitions[l - 1];
-					var za = 0.0;
+					var zj_acc = 0.0;
 					for (i in 0 until prevlayer.size) {
 						val a = prevlayer.activations[i]
 						val wij = transition.weights[i][j]
-						za += a * wij
+						zj_acc += a * wij
 					}
+					
+					
 
 
-					val bias = "<br/>b=" + String.format("%4.3f", transition.biases[j])
+					val bias = "<br/>b=" + String.format("%+4.3f", transition.biases[j])
 
-					val dbiass = dcost2text("<br/>bd=", transitiond?.get(l - 1)?.dCostVsBiases?.get(j))
-					val zas = if (showActivations) "<font point-size=\"10\">" + "<br/>z=b+" + String.format(
-						"%4.3f",
-						za
-					) + "</font>" else ""
+					val dbiass = dcost2text("<br/>dC/db=", transitiond?.get(l - 1)?.dCostVsBiases?.get(j))
+					var zas = ""
+					if (showActivations){
+						
+						
+						zas= "<font point-size=\"10\">"
+						zas+= "<br/>Ewa=" + String.format("%+4.3f",zj_acc)
+						val z=transition.biases[j]+zj_acc;
+						zas+= "<br/>z=" + String.format("%+4.3f",(z))
+						
+						if (transitiond!=null){
+							
+							if (activationsd!=null){
+							    zas+= dcost2text("<br/>dC/dZj=", activationsd[l].dCostVsdActivations[j]*sigmoidDerivative(z))							
+							}
+							zas+= dcost2text("<br/>dAj/dZj=",sigmoidDerivative(z))
+						}
+						zas+="</font>"
+						
+						
+					}
 					bias + dbiass + zas
+						
 				} else ""
 
 
 				val color = if (showActivations) activation2color(layer.activations[j]) else "white"
 				//00ff00"//""+(cr)+","+(cg)+","+(cb)//"+layer.activations[j]+","+layer.activations[j]
 
-				val dcas = dcost2text("<br/>ad=", activationsd?.get(l)?.dCostVsdActivations?.get(j))
+				val dcas = dcost2text("<br/>dC/dA=", activationsd?.get(l)?.dCostVsdActivations?.get(j))
 				val ass = (if (showActivations) {
 					"<font point-size=\"10\">" +
-							"<br/>a=" + String.format("%4.3f", layer.activations[j]) +
+							"<br/>a=" + String.format("%+4.3f", layer.activations[j]) +
 							"</font>"
 				} else {
 					""
@@ -98,7 +117,7 @@ object Dotter {
 		if (expected != null) {
 			for (i in 0 until expected.size) {
 				r += "\nexpected_" + i +
-						" [label=\"" + String.format("%4.3f", expected[i]) +
+						" [label=\"" + String.format("%+4.3f", expected[i]) +
 						"\"" +
 						"];"
 			}
@@ -125,13 +144,13 @@ object Dotter {
 
 					val color = if (showActivations) activation2color(prevlayer.activations[i]) else "black"
 
-					val ws = "w=" + String.format("%4.3f", tw) + " (" + (100 * twn).toInt() + "%)";
+					val ws = "w=" + String.format("%+4.3f", tw) + " (" + (100 * twn).toInt() + "%)";
 
 					val dw = dcost2text("<br/>cd=", transitiond?.get(l - 1)?.dCostVsWeights?.get(i)?.get(j))
 
 					val wa = if (showActivations) {
 						"<br/><font point-size=\"10\">" +
-								"wa=" + String.format("%4.3f", prevlayer.activations[i] * tw) +
+								"wa=" + String.format("%+4.3f", prevlayer.activations[i] * tw) +
 								"</font>"
 					} else ""
 
@@ -148,8 +167,8 @@ object Dotter {
 				val diff=expected[i]-net.layers[net.layers.size - 1].activations[i];
 				r += "\n"+n2string(net.layers.size - 1, i)+" -> expected_" + i +
 						" [label=<"+
-						"d=" + String.format("%4.3f", diff) +
-						"<br/>c=" + String.format("%4.3f", diff*diff) +
+						"d=" + String.format("%+4.3f", diff) +
+						"<br/>c=" + String.format("%+4.3f", diff*diff) +
 						">" +
 						"];"
 			}

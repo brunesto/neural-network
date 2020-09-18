@@ -89,7 +89,7 @@ class BackPropagation(val net: Network) {
 	class LayerD(val size: Int) {
 
 		// derivative of total cost with respect to activations
-		val dCostVsdActivations = DoubleArray(size) { rnd.nextDouble() }
+		val dCostVsdActivations = DoubleArray(size) { 0.0 }
 
 
 		override fun toString(): String {
@@ -128,7 +128,7 @@ class BackPropagation(val net: Network) {
 	fun costd(pair: Pair<DoubleArray, DoubleArray>): Array<LayerTransitionD> {
 		val transitionsd = newTransitionsd()
 		net.feedForward(pair.first)
-		println(net.toString(true, true))
+		//println(net.toString(true, true))
 		// derivative of cost vs neuron activation	
 		val layersd = Array(net.sizes.size) { i -> LayerD(net.sizes[i]) };
 
@@ -217,9 +217,9 @@ class BackPropagation(val net: Network) {
 			}
 		}
 
-		println(toString(transitionsd))
+		//println(toString(transitionsd))
 
-		//File("tmp/net.dot").writeText(Dotter.dot(true,net, transitionsd, layersd, pair.second))
+//		File("tmp/net.dot").writeText(Dotter.dot(true,net, transitionsd, layersd, pair.second))
 
 		return transitionsd
 	}
@@ -228,8 +228,9 @@ class BackPropagation(val net: Network) {
 	// update the weights and biases according to the gradiant
 	fun changeNetworkWeights(m: Double, transitionsd: Array<LayerTransitionD>) {
 
-
-		for (l in 0 until transitionsd.size) {
+		val onlyLastNLayers=transitionsd.size
+		val till=transitionsd.size-onlyLastNLayers
+		for (l in transitionsd.size-1 downTo till ) {
 			val transitiond = transitionsd[l]
 			val transition = net.transitions[l]
 			// update bias
@@ -264,12 +265,12 @@ class BackPropagation(val net: Network) {
 	}
 
 	fun learn(learnRate: Double, pairs: List<Pair<DoubleArray, DoubleArray>>) {
-				//File("tmp/net.dot").writeText(Dotter.dot(false,net))
+	//	File("tmp/net.dot").writeText(Dotter.dot(false,net))
 		val transitionsdAcc = batch(pairs)
-	//	File("tmp/net.dot").writeText(Dotter.dot(false,net, transitionsdAcc))
+//		File("tmp/net.dot").writeText(Dotter.dot(false,net, transitionsdAcc))
 		changeNetworkWeights(learnRate, transitionsdAcc);
-		//File("tmp/net.dot").writeText(Dotter.dot(false,net))
-		
+//		File("tmp/net.dot").writeText(Dotter.dot(false,net))
+		println("done")
 	}
 
 

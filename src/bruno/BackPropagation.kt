@@ -219,7 +219,7 @@ class BackPropagation(val net: Network) {
 
 		//println(toString(transitionsd))
 
-//		File("tmp/net.dot").writeText(Dotter.dot(true,net, transitionsd, layersd, pair.second))
+	//	File("tmp/net.dot").writeText(Dotter.dot(true,net, transitionsd, layersd, pair.second))
 
 		return transitionsd
 	}
@@ -267,9 +267,10 @@ class BackPropagation(val net: Network) {
 	fun learn(learnRate: Double, pairs: List<Pair<DoubleArray, DoubleArray>>) {
 	//	File("tmp/net.dot").writeText(Dotter.dot(false,net))
 		val transitionsdAcc = batch(pairs)
-//		File("tmp/net.dot").writeText(Dotter.dot(false,net, transitionsdAcc))
-		changeNetworkWeights(learnRate, transitionsdAcc);
-//		File("tmp/net.dot").writeText(Dotter.dot(false,net))
+	//	File("tmp/net.dot").writeText(Dotter.dot(false,net, transitionsdAcc))
+
+				changeNetworkWeights(learnRate/pairs.size, transitionsdAcc);
+//	File("tmp/net.dot").writeText(Dotter.dot(false,net))
 		println("done")
 	}
 

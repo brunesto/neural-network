@@ -9,11 +9,11 @@ import java.awt.Color
 
 
 // a Layer transition holds the weights and biases used to compute the neuron activation of the next layer
-class LayerTransition(inputSize: Int, outputSize: Int) {
+class LayerTransition(val inputSize: Int,val  outputSize: Int) {
 	var biases = DoubleArray(outputSize) { i -> if (i == 0) 0.0 else rnd.nextDouble() } // TODO:why 0 when i==0?
 	var weights = Array<DoubleArray>(inputSize) {
 		DoubleArray(outputSize) {
-			rnd.nextDouble()
+			rnd.nextDouble()*2-1.0
 		}
 	}
 
@@ -35,6 +35,19 @@ class LayerTransition(inputSize: Int, outputSize: Int) {
 		}
 		return r
 	}
+	
+	
+	fun clone():LayerTransition{
+		val r =LayerTransition(inputSize,outputSize)
+		for (j in 0 until outputSize){
+			r.biases[j]=biases[j]
+			for (i in 0 until outputSize) {
+				r.weights[i][j] = weights[i][j]
+			}
+			
+		}
+		return r
+	}
 
 }
 
@@ -43,6 +56,13 @@ class Layer(val size: Int) {
 	var activations = DoubleArray(size) { 0.0 }
 
 
+	fun clone():Layer{
+		val r =Layer(size)
+		for (i in 0 until activations.size)
+			r.activations[i]=activations[i]
+		return r
+	}
+	
 	override fun toString(): String {
 		var r = ""
 		r += "" + activations.size + " neurons \n"
@@ -59,10 +79,17 @@ class Layer(val size: Int) {
 class Network(val sizes: IntArray) {
 
 
-	val layers = Array(sizes.size) { i -> Layer(sizes[i]) };
-	val transitions = Array(sizes.size - 1) { i -> LayerTransition(sizes[i], sizes[i + 1]) }
+	var layers = Array(sizes.size) { i -> Layer(sizes[i]) };
+	var transitions = Array(sizes.size - 1) { i -> LayerTransition(sizes[i], sizes[i + 1]) }
 
 
+	fun clone():Network {
+		val r=Network(sizes)
+		
+		r.layers=this.layers.clone()
+		r.transitions=this.transitions.clone()		
+		return r
+	}
 
 	// update the layers activation forward
 	fun feedForward(input: DoubleArray): DoubleArray {
@@ -120,6 +147,7 @@ class Network(val sizes: IntArray) {
 	}
 
 
+	// compute the total cost of batch
 	fun batchcost(pairs: List<Pair<DoubleArray, DoubleArray>>): Double {
 		var cost_Acc = 0.0
 		for (p in pairs.indices) {

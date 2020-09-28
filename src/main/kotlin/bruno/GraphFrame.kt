@@ -81,7 +81,7 @@ class GraphFrame(title: String) : JFrame() {
 
 
 	// class used to help with converting pixel to value and vice versa
-	class Pix2Value(val width: Int, val minp: Double? = null, val maxp: Double? = null) {
+	class Pix2Value(val width: Int, val reverse: Boolean = false, val minp: Double? = null, val maxp: Double? = null) {
 
 		// no lateinit?
 		val min: Double
@@ -91,16 +91,20 @@ class GraphFrame(title: String) : JFrame() {
 
 		// convert from pixel to x value
 		fun pix2v(i: Int): Double {
-			return min + i * step
+			val p = if (reverse) width - i else i
+			return  min + p * step;
 		}
 
 		// convert from x to pixel
 		fun v2pix(x: Double): Int {
-			return (((x - min) / diff) * width).toInt()  // TOOD optimize
+			val fwd = (((x - min) / diff) * width).toInt()  // TOOD optimize
+			if (reverse)
+				return width - fwd
+			return fwd
 		}
 
 		init {
-			var xMin = if (minp == null) 0.0 else minp
+			var xMin = if (minp == null) 0.0 else minp 
 			var xMax = if (maxp == null) 1.0 else maxp
 
 
@@ -152,20 +156,16 @@ class GraphFrame(title: String) : JFrame() {
 				val dy = 0//(i % 2) * 15
 				g.drawLine(xPix2Value.v2pix(x), 0, xPix2Value.v2pix(x), yAxis + 5 + dy)
 				g.drawString(DecimalFormat("#.####").format(x), xPix2Value.v2pix(x) - 10, yAxis + 5 + 20 + dy)
-				
-				
-				
+
 
 			}
-			
-			        val hx=highlightPixX
-					if (hx != null) {
-						g.drawRect(hx- 3, yAxis - 3, 6, 6)
-						g.drawString(DecimalFormat("#.####").format(xPix2Value.pix2v(hx)), hx + 5,  yAxis + 10)
-					}
-			
-			
-			
+
+			val hx = highlightPixX
+			if (hx != null) {
+				g.drawRect(hx - 3, yAxis - 3, 6, 6)
+				g.drawString(DecimalFormat("#.####").format(xPix2Value.pix2v(hx)), hx + 5, yAxis + 10)
+			}
+
 
 		}
 
@@ -205,9 +205,6 @@ class GraphFrame(title: String) : JFrame() {
 				g.drawLine(0, yPix2Value.v2pix(0.0), width, yPix2Value.v2pix(0.0))
 				g.drawLine(xPix2Value.v2pix(0.0), 0, xPix2Value.v2pix(0.0), height)
 
-				
-				
-				
 
 				// Y axis		
 				g.setColor(colors[fi % colors.size])
@@ -261,13 +258,24 @@ class GraphFrame(title: String) : JFrame() {
 	}
 
 
+	fun expandArea2Resized() {
+
+		val xmin = xPix2Value.pix2v(0)
+		val ymin = yPix2Value.pix2v(0)
+		val xmax = xPix2Value.pix2v(graphPanel.width.toInt())
+		val ymax = yPix2Value.pix2v(graphPanel.height.toInt())
+		area = Point(xmax - xmin, ymax - ymin)
+		recomputeBoundaries()
+	}
+
+
 	fun recomputeBoundaries() {
 		min = center.minus(area.dividedBy(Point.id(2.0)))
 		max = center.plus(area.dividedBy(Point.id(2.0)))
 
 
-		xPix2Value = Pix2Value(graphPanel.width.toInt(), min.x, max.x)
-		yPix2Value = Pix2Value(graphPanel.height.toInt(), min.y, max.y)
+		xPix2Value = Pix2Value(graphPanel.width.toInt(), false,min.x, max.x)
+		yPix2Value = Pix2Value(graphPanel.height.toInt(), true,min.y, max.y)
 
 
 		redraw()
@@ -286,11 +294,20 @@ class GraphFrame(title: String) : JFrame() {
 	}
 
 
-	fun zoomGraph(dz: Double) {
+
+	fun zoomGraph(dz: Double,skipX:Boolean ) {
+		
+		val original=area;
+		
+		
 		if (dz > 0)
 			area = area.multiply(Point.id(dz));
 		else
 			area = area.dividedBy(Point.id(dz).negation());
+		
+		// restore x
+		if (skipX)
+			area=area.x(original.x)
 
 		recomputeBoundaries()
 
@@ -341,8 +358,8 @@ class GraphFrame(title: String) : JFrame() {
 		add(statusLabel, BorderLayout.SOUTH)
 
 		buttonsPanel.add(btnClick(JButton("0"), { resetView() }, "reset"))
-		buttonsPanel.add(btnClick(JButton("+"), { zoomGraph(-zf) }))
-		buttonsPanel.add(btnClick(JButton("-"), { zoomGraph(+zf) }))
+		buttonsPanel.add(btnClick(JButton("+"), { zoomGraph(-zf,false) }))
+		buttonsPanel.add(btnClick(JButton("-"), { zoomGraph(+zf,false) }))
 		buttonsPanel.add(btnClick(JButton("<-"), { moveGraphStep(Point(+mr, 0.0)) }))
 		buttonsPanel.add(btnClick(JButton("->"), { moveGraphStep(Point(-mr, 0.0)) }))
 		buttonsPanel.add(btnClick(JButton("^"), { moveGraphStep(Point(0.0, -mr)) }))
@@ -358,7 +375,7 @@ class GraphFrame(title: String) : JFrame() {
 		graphPanel.addComponentListener(
 			object : ComponentAdapter() {
 				override fun componentResized(e: ComponentEvent) {
-					recomputeBoundaries()
+					expandArea2Resized()
 				}
 			}
 		);
@@ -368,9 +385,9 @@ class GraphFrame(title: String) : JFrame() {
 			{ e ->
 				val notches = e.getWheelRotation()
 				if (notches < 0)
-					zoomGraph(-zf)
+					zoomGraph(-zf,e.isControlDown())
 				else
-					zoomGraph(+zf)
+					zoomGraph(+zf,e.isControlDown())
 			}
 		);
 
@@ -404,8 +421,8 @@ class GraphFrame(title: String) : JFrame() {
 		val ex = xPix2Value.pix2v(e.getX())
 		val dx = ex - sx;
 
-		val sy = xPix2Value.pix2v(s.getY())
-		val ey = xPix2Value.pix2v(e.getY())
+		val sy = yPix2Value.pix2v(s.getY())
+		val ey = yPix2Value.pix2v(e.getY())
 		val dy = ey - sy;
 
 		val dV = Point(dx, dy)

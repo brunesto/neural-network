@@ -25,9 +25,13 @@ object One2One {
 						{ x ->
 							//println(x)
 							// modify the parameter						   
-							netb.transitions[l].biases[n]=netp.transitions[l].biases[n]*x
+							netb.transitions[l].biases[n]=x
 							//println("bias netp:"+netp.transitions[l].biases[n])
 							netb.batchcost(batch)
+							
+							
+							
+							
 						},
 						"vs-bias[$l][$n]"
 					)

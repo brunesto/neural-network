@@ -41,7 +41,7 @@ class LayerTransition(val inputSize: Int,val  outputSize: Int) {
 		val r =LayerTransition(inputSize,outputSize)
 		for (j in 0 until outputSize){
 			r.biases[j]=biases[j]
-			for (i in 0 until outputSize) {
+			for (i in 0 until inputSize) {
 				r.weights[i][j] = weights[i][j]
 			}
 			
@@ -85,9 +85,9 @@ class Network(val sizes: IntArray) {
 
 	fun clone():Network {
 		val r=Network(sizes)
-		
-		r.layers=this.layers.clone()
-		r.transitions=this.transitions.clone()		
+		val me=this
+		r.layers=Array(sizes.size){i->me.layers[i].clone()}
+		r.transitions=Array(sizes.size-1){i->me.transitions[i].clone()}	
 		return r
 	}
 
@@ -164,7 +164,9 @@ class Network(val sizes: IntArray) {
 
 
 
-		return cost_Acc / pairs.size;
+		val r=cost_Acc / pairs.size;
+		//println("batchCost:$r")
+		return r
 	}
 
 

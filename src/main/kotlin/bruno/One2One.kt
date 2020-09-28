@@ -16,18 +16,25 @@ object One2One {
 				
 				// graph the cost while varying the bias
 			    val netb=netp.clone()	
-				graph(
-					name+"cost-vs-bias[$l][$n]", Pair(0.999, 1.001),
+				val gf=GraphFrame(name+"cost-vs-bias[$l][$n]")
+				netb.batchcost(batch)
+				
+				gf.add (
+//				, Pair(0.999, 1.001),
 					Graphable(
 						{ x ->
-							println(x)
+							//println(x)
 							// modify the parameter						   
-							netb.transitions[l].biases[n]=netp.transitions[l].biases[n]*x							
+							netb.transitions[l].biases[n]=netp.transitions[l].biases[n]*x
+							//println("bias netp:"+netp.transitions[l].biases[n])
 							netb.batchcost(batch)
 						},
 						"vs-bias[$l][$n]"
 					)
 				)
+				
+				gf.setXRange(Pair(-netp.transitions[l].biases[n],2*netp.transitions[l].biases[n]))
+				gf.interactive()
 				
 				
 				/*// graph the cost while varying a single weight

@@ -29,18 +29,30 @@ fun range(v: DoubleArray): Pair<Double, Double> {
 	return Pair(dMin, dMax)
 }
 
-class Graphable(val f: (Double) -> Double, val name: String = "", val rangep: Pair<Double, Double>? = null) {
+//class Graphable(val f: (Double) -> Double, val name: String = "", val rangep: Pair<Double, Double>? = null) {
+//
+//
+//}
+//
+//fun smallestPower(target: Double, base: Double = 10.0): Double {
+//	var r = 0.0
+//	while (Math.pow(base, r) < target) r++
+//	while (Math.pow(base, r) > target) r--
+//	//println("powerMin($target,$base) returns $r ("+Math.pow(base,r)+")")
+//
+//	return r
+//
+//}
 
 
-}
-
-fun smallestPower(target: Double, base: Double = 10.0): Double {
-	var r = 0.0
-	while (Math.pow(base, r) < target) r++
-	while (Math.pow(base, r) > target) r--
-	//println("powerMin($target,$base) returns $r ("+Math.pow(base,r)+")")
-
-	return r
+fun graph2(
+	name: String,
+	xrange: Pair<Double, Double>,
+	vararg graphables: Graphable
+) {
+	
+	
+	
 }
 
 fun graph(

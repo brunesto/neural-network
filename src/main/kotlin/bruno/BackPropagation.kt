@@ -1,11 +1,8 @@
 package bruno
 
-// CAPTCHA: in kotlin until is exclusive but downTo is inclusive ???
-import java.util.*
-import java.awt.image.BufferedImage
-import javax.imageio.ImageIO
 import java.io.File
-import java.awt.Color
+
+// CAPTCHA: in kotlin until is exclusive but downTo is inclusive ???
 
 
 class BackPropagation(val net: Network) {
@@ -224,7 +221,17 @@ class BackPropagation(val net: Network) {
 		return transitionsd
 	}
 
-
+	fun boost(d:Double):Double{
+		val t=0.1
+		if (d<0) {
+			if (d > -t)
+				return  -t
+		} else {
+			if (d < t)
+				return t
+		}
+	return d
+	}
 	// update the weights and biases according to the gradiant
 	fun changeNetworkWeights(m: Double, transitionsd: Array<LayerTransitionD>) {
 
@@ -235,13 +242,13 @@ class BackPropagation(val net: Network) {
 			val transition = net.transitions[l]
 			// update bias
 			for (j in 0 until transition.biases.size) {
-				transition.biases[j] += m * -transitiond.dCostVsBiases[j]
+				transition.biases[j] += m * boost(-transitiond.dCostVsBiases[j])
 			}
 
 			// update weight
 			for (i in 0 until transition.weights.size) {
 				for (j in 0 until transition.weights[i].size) {
-					transition.weights[i][j] += m * -transitiond.dCostVsWeights[i][j]
+					transition.weights[i][j] += m * boost(-transitiond.dCostVsWeights[i][j])
 				}
 			}
 		}
@@ -249,7 +256,7 @@ class BackPropagation(val net: Network) {
 
 
 	// update the derivatives on a batch
-	fun batch(pairs: List<Pair<DoubleArray, DoubleArray>>): Array<LayerTransitionD> {
+	fun batchcostd(pairs: List<Pair<DoubleArray, DoubleArray>>): Array<LayerTransitionD> {
 		val transitionsdAcc = newTransitionsd()
 
 		for (p in pairs.indices) {
@@ -266,12 +273,14 @@ class BackPropagation(val net: Network) {
 
 	fun learn(learnRate: Double, pairs: List<Pair<DoubleArray, DoubleArray>>) {
 	//	File("tmp/net.dot").writeText(Dotter.dot(false,net))
-		val transitionsdAcc = batch(pairs)
-	//	File("tmp/net.dot").writeText(Dotter.dot(false,net, transitionsdAcc))
+		val transitionsdAcc = batchcostd(pairs)
+		//File("tmp/net.dot").writeText(Dotter.dot(false,net, transitionsdAcc))
+		changeNetworkWeights(learnRate/pairs.size, transitionsdAcc);
+     	//File("tmp/net.dot").writeText(Dotter.dot(false,net))
+		//println("done")
 
-				changeNetworkWeights(learnRate/pairs.size, transitionsdAcc);
-//	File("tmp/net.dot").writeText(Dotter.dot(false,net))
-		println("done")
+		println("done"+transitionsdAcc[1].dCostVsWeights[1][0]+" ->"+net.transitions[1].weights[1][0])
+
 	}
 
 

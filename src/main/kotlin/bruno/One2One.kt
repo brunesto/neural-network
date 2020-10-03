@@ -5,7 +5,54 @@ import java.io.File
 // samples for one2one
 object One2One {
 
-	
+
+	/**
+	 * graph cost and cost derivative while changing a given variable (a given bias or weight)
+	 * the value for the variable is swept over [ -[initialv],+[initialv] ]
+	 * [modifier] modifies the network to use the value
+	 * [getd] returns the corresponding derivative
+	 */
+	fun graphCostAndD(name:String, netp: Network,batch:List<Pair<DoubleArray, DoubleArray>>,
+					  initialv:Double,
+					  modifier:(Network,Double)->Unit,
+					  getd:(Array<BackPropagation.LayerTransitionD>)->Double){
+		val net=netp.clone()
+		val gf=GraphFrame("cost-vs-"+name)
+		val initialCost=net.batchcost(batch)
+
+		gf.add (
+//				, Pair(0.999, 1.001),
+				Graphable(
+						{ x ->
+							//println(x)
+							// modify the parameter
+							//netb.transitions[l].biases[n]=x
+							modifier(net,x)
+							//println("bias netp:"+netp.transitions[l].biases[n])
+							net.batchcost(batch)
+						},
+						"c-vs-"+name,
+						description = "init:"+initialv,
+						pois= mapOf(Point(initialv,initialCost) to "initial")
+				))
+		gf.add(
+				Graphable(
+						{ x ->
+							//println(x)
+							// modify the parameter
+							modifier(net,x)
+							val gradient=BackPropagation(net).batchcostd(batch)
+							getd(gradient)
+						},
+						"dc-vs-"+name,
+						description = "init:"+initialv
+				)
+		)
+
+		gf.setXRange(Pair(-initialv,2*initialv))
+		gf.interactive()
+	}
+
 	// helper graph the activations vs expected for the network
 	fun graphCostVsParameter(name:String, netp: Network, f: (Double) -> Double,onlyLastLayer:Boolean=true) {
 		
@@ -13,52 +60,38 @@ object One2One {
 		
 		for (l in (if (onlyLastLayer) netp.layers.size-2 else 0) until netp.layers.size-1)
 			for (n in 0 until netp.layers[l+1].size){
-				
-				// graph the cost while varying the bias
-			    val netb=netp.clone()	
-				val gf=GraphFrame(name+"cost-vs-bias[$l][$n]")
-				netb.batchcost(batch)
-				
-				gf.add (
-//				, Pair(0.999, 1.001),
-					Graphable(
-						{ x ->
-							//println(x)
-							// modify the parameter						   
-							netb.transitions[l].biases[n]=x
-							//println("bias netp:"+netp.transitions[l].biases[n])
-							netb.batchcost(batch)
-							
-							
-							
-							
-						},
-						"vs-bias[$l][$n]"
-					)
-				)
-				
-				gf.setXRange(Pair(-netp.transitions[l].biases[n],2*netp.transitions[l].biases[n]))
-				gf.interactive()
-				
-				
-				/*// graph the cost while varying a single weight
+
+				graphCostAndD("vs-bias[$l][$n]",netp,batch,
+						initialv=netp.transitions[l].biases[n],
+						modifier={net,x->net.transitions[l].biases[n]=x},
+						getd={gradient->gradient[l].dCostVsBiases[n]})
+
+
+				// graph the cost while varying a single weight
 				for (m in 0 until netp.layers[l].size){
-        		    val netw=netp.clone()	
-        			graph(
-        				name+"cost-vs-weight[$l][$m,$n]",  Pair(-0.1, 0.1),
-        				Graphable(
-        					{ x ->
-        						// modify the parameter						   
-        						netw.transitions[l].weights[m][n]=netp.transitions[l].weights[m][n]+netp.transitions[l].weights[m][n]*x							
-        						netw.batchcost(batch)
-        					},
-        					"vs-w[$l][$m,$n]"
-        				)
-        			)
-				
-					
+
+
+					graphCostAndD("vs-weight[$l][$m,$n]",netp,batch,
+							initialv=netp.transitions[l].weights[m][n],
+							modifier={net,x->net.transitions[l].weights[m][n]=x},
+							getd={gradient->gradient[l].dCostVsWeights[m][n]})
+
+//        		    val netw=netp.clone()
+//        			graph(
+//        				name+"cost-vs-weight[$l][$m,$n]",  Pair(-0.1, 0.1),
+//        				Graphable(
+//        					{ x ->
+//        						// modify the parameter
+//        						netw.transitions[l].weights[m][n]=netp.transitions[l].weights[m][n]+netp.transitions[l].weights[m][n]*x
+//        						netw.batchcost(batch)
+//        					},
+//        					"vs-w[$l][$m,$n]"
+//        				)
+//        			)
+
+
 				}
- */
+
 				
 				
 				
@@ -175,20 +208,38 @@ object One2One {
 			doubleArrayOf(11.0)
 		)
 
-		
-		println(net.batchcost( makebatch(F_VALLEY)));
-		graphActivations("tmp/manual-valley", net, F_VALLEY)
-		graphCostVsParameter("tmp/cost",net, F_VALLEY);
 
-		// now mess around with one weight
-//		net.transitions[1].weights = arrayOf(
-//			doubleArrayOf(1.0),
-//			doubleArrayOf(-10.0)
+
+//
+//		net.transitions[0].biases = doubleArrayOf( 0.20479598500018842, -9.813991464026037,)
+//		net.transitions[0].weights = arrayOf(
+//				doubleArrayOf( -0.09389505649045397, 0.06494417345887404,),
 //		)
+//		net.transitions[1].biases = doubleArrayOf( -5.043815242139092,)
+//		net.transitions[1].weights = arrayOf(
+//				doubleArrayOf( 9.34090347960948,),
+//				doubleArrayOf( -14.57200000000174,),
+//		)
+//
+//
+//
+//		println(net.batchcost( makebatch(F_VALLEY)));
+//		graphActivations("tmp/manual-valley", net, F_VALLEY)
+//		graphCostVsParameter("tmp/cost",net, F_VALLEY,false);
+
+//		 now mess around with one weight
+				 net.transitions[1].weights = arrayOf(
+				 doubleArrayOf(11.0),
+				 doubleArrayOf(-20.0)
+		 )
+
+		graphCostVsParameter("tmp/cost",net, F_VALLEY,true);
+
+		//graphCostVsParameter("tmp/cost",net, F_VALLEY,true);
 
 //		net.transitions[0].biases = doubleArrayOf(8.0, -60.0)
 //		
-//		learn_function("hill",net,f,100)
+		//learn_function("valley",net,F_VALLEY,4000)
 
 		//	val f2 = { x: Double -> if (x > 0.5) 1 - x else x } // bug!!!!!
 		//	learn_function("hill", net, f2, 20000)
@@ -322,6 +373,7 @@ object One2One {
 				epochs2graph = graphEvery
 
 				println(net.toString(false, true))
+				println(net.toKotlinString())
 				println("cost:" + net.batchcost(batch))
 				println("epoch:" + epoch)
 			}
